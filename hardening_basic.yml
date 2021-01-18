@@ -1,0 +1,4 @@
+---
+- hosts: pruebas
+  roles:
+    - hardening_basic

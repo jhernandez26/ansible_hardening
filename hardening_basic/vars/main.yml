@@ -1,0 +1,4 @@
+---
+# vars file for hardening_basic
+usuarios_grupos: ['b945480','jhernandez']
+paquete: ['iptables-services','nmap']

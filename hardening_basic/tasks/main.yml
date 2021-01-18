@@ -1,0 +1,29 @@
+---
+# tasks file for hardening_basic
+- name: Hardening basico
+  block:
+  - debug:
+      msg: "Se crea el hardening basico del SO"
+
+  - name: Crea grupo sysadmins
+    group:
+      name: sysadmins
+      gid: 300
+    tags:
+      - create_sysadmins_group
+  - debug:
+      msg: "Se crea el grupo de sysadmins"
+
+  - name: Crea los usuarios basicos
+    user:
+      name: jhernandez
+      shell: /bin/bash
+      uid: 6000
+      group: jhernandez
+      groups: sysadmins
+      create_home: True
+    tags:
+      - create_user
+  - debug:
+      msg: "Se crean los usuarios basicos"
+
