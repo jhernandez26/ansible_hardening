@@ -1,2 +1,3 @@
 ---
 # defaults file for hardening_basic
+ssh_user_new: root123

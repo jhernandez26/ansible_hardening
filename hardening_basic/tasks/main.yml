@@ -5,25 +5,113 @@
   - debug:
       msg: "Se crea el hardening basico del SO"
 
-  - name: Crea grupo sysadmins
-    group:
-      name: sysadmins
-      gid: 300
-    tags:
-      - create_sysadmins_group
-  - debug:
-      msg: "Se crea el grupo de sysadmins"
+#Bloque para la creacion de usuarios y grupos de operaciones(administradores)
+  - name: Creacion de grupo y usuarios
+    block:
+    - debug:
+       msg: "Bloque para la creacion de usuarios"
 
-  - name: Crea los usuarios basicos
-    user:
-      name: jhernandez
-      shell: /bin/bash
-      uid: 6000
-      group: jhernandez
-      groups: sysadmins
-      create_home: True
-    tags:
-      - create_user
-  - debug:
-      msg: "Se crean los usuarios basicos"
+# Creacion de  usuarios y grupos
+    - name: Crea grupo sysadmins
+      group:
+        name: sysadmins
+        gid: 300
+      tags:
+        - create_sysadmins_group
+    - debug:
+        msg: "Se crea el grupo de sysadmins"
+
+# Creacion de grupos
+    - name:
+      group:
+         name: "{{ item.grupo }}"
+         gid: "{{ item.uid }}"
+      with_items: 
+          - "{{ usuarios_grupos }}"
+      tags:
+        - create_ope_group 
+    - debug:
+        msg: "Se crean los grupos basicos para operaciones"
+
+# Creacion de usuarios de operciones con el password temporal123
+    - debug:
+        msg: "Se va crear el usuario  {{ item.usuario }} "
+        verbosity: 3
+      with_items:
+         - "{{ usuarios_grupos }}"
+
+    - name: Crea los usuarios basicos
+      user:
+        name: "{{ item.usuario }}"
+        shell: /bin/bash
+        uid: "{{ item.uid }}"
+        group: "{{ item.grupo }}"
+        groups: sysadmins
+        password: $6$LGWciU4b2txiX25Z$KRx3/8Cv3t.IKmm2r8lAHYr.ulJTpHB2v3d5Ln//.RvCGZsMXI8cP0UcTI1fdUrcM7IjiR84suOOIWoLlVop81
+        create_home: True
+      with_items: '{{ usuarios_grupos }}'
+      tags:
+        - create_user
+    - debug:
+        msg: "Se crean los usuarios basicos"
+
+# Bloque para la instalacion de paquetes basicos para el hardening
+  - name: Instalacion de paquetes basicos
+    block:
+    - debug:
+       msg: "Bloque de instalacion de paquetes"
+
+# Instalación de paquetes
+    - debug:
+        msg: "Se va instalar  el  paquete  {{ item.na# Bloque para la creacion de usuarios y grupos de operaciones(administradores)
+  - name: Creacion de sudoer para el usuario de ansible
+    block:
+    - debug:
+       msg: "Bloque de reglas de sudoers basico"
+
+    - debug:
+        msg: "Se coloca la regla de sudoer  {{ item.file }} "
+        verbosity: 3
+      with_items:
+         - "{{ sudoers }}"
+
+      with_items:
+         - "{{ paquete }}"
+      tags:
+        - install_packages 
+    - debug:
+        msg: "Se instalaron los paquetes"
+
+# Bloque para colocar las sudoers
+  - name: Creacion de sudoer para el usuario de ansible
+    block:
+    - debug:
+       msg: "Bloque de reglas de sudoers basico"
+
+    - debug:
+        msg: "Se coloca la regla de sudoer  {{ item.file }} "
+        verbosity: 3
+      with_items:
+         - "{{ sudoers }}"
+
+# Se coloca reglas de sudoer para el usuario ansible
+    - name: Se coloca configuracion de sudoers
+      template:
+         src: "{{ item.file }}"
+         dest: "{{ item.dest }}"
+         owner: root
+         mode: 0444
+         validate: /sbin/visudo -c -f %s
+      with_items:
+          - "{{ sudoers }}"
+      tags:
+        - sudoers
+    - debug:
+        msg: "Se coloca el sudoers basico"
+
+# Bloque para colocar la configuracion basica
+  - name: Configuracion basica de software
+    block:
+    - debug:
+       msg: "Bloque de configuraciones "
 

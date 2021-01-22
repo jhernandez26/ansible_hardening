@@ -1,0 +1,20 @@
+# sec.name source community
+#com2sec local localhost MONITOREO
+com2sec redmonbaz80 10.80.204.0/24 MONITOREO
+com2sec redmonbaz82 10.82.16.0/24 MONITOREO
+# groupName securityModel securityName
+#group MyRWGroup v1 local
+#group MyRWGroup v2c local
+#group MyRWGroup usm local
+group GpoMonBAZ80 v1 redmonbaz80
+group GpoMonBAZ80 v2c redmonbaz80
+group GpoMonBAZ80 usm redmonbaz80
+group GpoMonBAZ82 v1 redmonbaz82
+group GpoMonBAZ82 v2c redmonbaz82
+group GpoMonBAZ82 usm redmonbaz82
+#name incl/excl subtree mask(optional)
+view all included .1
+# group context sec.model sec.level prefix read write notif
+#access MyRWGroup "" any noauth exact all all all
+access GpoMonBAZ80 "" any noauth exact all none none
+access GpoMonBAZ82 "" any noauth exact all none none

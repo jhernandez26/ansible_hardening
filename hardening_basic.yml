@@ -1,4 +1,4 @@
 ---
-- hosts: pruebas
+- hosts: new_serves
   roles:
     - hardening_basic

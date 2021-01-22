@@ -1,0 +1,16 @@
+# Hosts
+Host_Alias SRV_ANSIBLE = ALL
+
+# Users
+User_Alias USR_ANSIBLE = ansible
+
+# RunAS
+Runas_Alias USR_ROOT = root
+
+# Commands
+Cmnd_Alias CMD_ANSIBLE_ROOT = /bin/sh
+
+# Rules
+USR_ANSIBLE SRV_ANSIBLE=(USR_ROOT)  NOPASSWD:CMD_ANSIBLE_ROOT
+
+

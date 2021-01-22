@@ -1,4 +1,26 @@
 ---
 # vars file for hardening_basic
-usuarios_grupos: ['b945480','jhernandez']
-paquete: ['iptables-services','nmap']
+usuarios_grupos:
+      - { usuario: app_care, uid: 6000, grupo: app_care }
+      - { usuario: b945480, uid: 6001, grupo: b945480 }        
+      - { usuario: b748210, uid: 6002, grupo: b748210 }
+      - { usuario: ansible, uid: 7000, grupo: ansible }
+
+paquete:
+      - { name: nmap }
+      - { name: iptables-services }
+      - { name: net-snmp }
+      - { name: rsync }
+      - { name: strace }
+      - { name: lsof }
+      - { name: tcpdump }
+      - { name: iptraf-ng }
+      - { name: ntp }
+
+sudoers:
+      - { file: hardening_basic/templates/ansible.j2, dest: /etc/sudoers.d/ansible }
+      - { file: hardening_basic/templates/sysadmins.j2, dest: /etc/sudoers.d/sysadmins }
+      - { file: hardening_basic/templates/app_care.j2, dest: /etc/sudoers.d/app_care }
+
+configuracion_archivos:
+      - { file: hardening_basic/templates/snmpd.conf.j2, dest: /etc/snmp/snmpd.conf }

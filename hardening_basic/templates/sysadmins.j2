@@ -1,0 +1,16 @@
+# Hosts
+Host_Alias SRV = ALL
+
+# Users
+User_Alias USR_ADM = %sysadmins
+
+# RunAS
+Runas_Alias USR_CDH_APP = mysql,cloudera-scm,apache,flume,hdfs,solr,zookeeper,llama,httpfs,mapred,sqoop,yarn,kms,hive,sqoop2,oozie,hbase,sentry,impala,spark,hue,kudu
+
+# Commands
+Cmnd_Alias CMD_CDH_APP = ALL
+Cmnd_Alias CMD_ROOT = /usr/sbin/iotop, /usr/bin/netstat, /sbin/ss, /usr/bin/strace, /usr/sbin/lsof, /usr/bin/nmap, /usr/bin/journalctl, /usr/bin/cat, /bin/grep, /usr/bin/less, /usr/bin/ls, /usr/sbin/tcpdump, /usr/sbin/iptraf-ng, /bin/systemctl restart ntpd, /usr/bin/su, /usr/bin/chown, /bin/rsync -ar --delete /tmp/scripts /admscripts/, /bin/systemctl restart ntpd, /sbin/swapoff -a, /sbin/swapon -a, /admscripts/scripts/cis-run, /admscripts/scripts/cis-clean, /admscripts/scripts/dsi-files
+
+# Rules
+USR_ADM SRV=(USR_CDH_APP) NOPASSWD:CMD_CDH_APP
+USR_ADM SRV=(root) NOPASSWD:CMD_ROOT
