@@ -3,5 +3,7 @@ ansible_user = root
 ansible_password = '{{ ssh_user_new }}'
 
 [new_serves]
-192.168.100.152
+#192.168.100.152
+#192.168.122.205
 #192.168.122.11
+192.168.122.49

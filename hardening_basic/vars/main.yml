@@ -1,5 +1,6 @@
 ---
 # vars file for hardening_basic
+
 usuarios_grupos:
       - { usuario: app_care, uid: 6000, grupo: app_care }
       - { usuario: b945480, uid: 6001, grupo: b945480 }        
@@ -15,6 +16,7 @@ paquete:
       - { name: lsof }
       - { name: tcpdump }
       - { name: iptraf-ng }
+      - { name: vim }
       - { name: ntp }
 
 sudoers:
@@ -24,3 +26,10 @@ sudoers:
 
 configuracion_archivos:
       - { file: hardening_basic/templates/snmpd.conf.j2, dest: /etc/snmp/snmpd.conf }
+
+demonios:
+     - {name: chronyd ,state: stopped ,mask: yes , enable: no }
+     - {name: firewalld ,state: stopped ,mask: yes , enable: no }
+     - {name: iptables ,state: started ,mask: no , enable: yes }
+     - {name: snmpd ,state: started ,mask: no , enable: yes }
+     - {name: ntpd ,state: started ,mask: no , enable: yes }

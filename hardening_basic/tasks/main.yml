@@ -1,5 +1,9 @@
 ---
 # tasks file for hardening_basic
+
+#- set_fact: 
+#    VM_flag="{{lookup('pipe','dmidecode -s system-manufacturer') }}"
+
 - name: Hardening basico
   block:
   - debug:
@@ -62,25 +66,16 @@
        msg: "Bloque de instalacion de paquetes"
 
 # Instalación de paquetes
-    - debug:
-        msg: "Se va instalar  el  paquete  {{ item.na# Bloque para la creacion de usuarios y grupos de operaciones(administradores)
-  - name: Creacion de sudoer para el usuario de ansible
-    block:
-    - debug:
-       msg: "Bloque de reglas de sudoers basico"
-
-    - debug:
-        msg: "Se coloca la regla de sudoer  {{ item.file }} "
-        verbosity: 3
+    - name: Instalacion de paquetes
+      yum:
+        name: "{{ item.name }}"
+        state: present
       with_items:
-         - "{{ sudoers }}"
-
-      with_items:
-         - "{{ paquete }}"
+        - "{{ paquete }}"
       tags:
         - install_packages 
     - debug:
-        msg: "Se instalaron los paquetes"
+       msg: "Se instalaron los paquetes"
 
 # Bloque para colocar las sudoers
   - name: Creacion de sudoer para el usuario de ansible
@@ -94,7 +89,7 @@
       with_items:
          - "{{ sudoers }}"
 
-# Se coloca reglas de sudoer para el usuario ansible
+# Se coloca reglas de sudoer para los usuarios ansible, app_care y el grupo sysadmins
     - name: Se coloca configuracion de sudoers
       template:
          src: "{{ item.file }}"
@@ -107,11 +102,82 @@
       tags:
         - sudoers
     - debug:
-        msg: "Se coloca el sudoers basico"
+       msg: "Se coloca el sudoers basico"
 
-# Bloque para colocar la configuracion basica
+# Bloque para colocar la configuracion basica de software
   - name: Configuracion basica de software
     block:
     - debug:
        msg: "Bloque de configuraciones "
 
+    - name: Configuracion de servicios
+      template:
+         src: "{{ item.file }}"
+         dest: "{{ item.dest }}"
+         owner: root
+         mode: 0444
+      with_items:
+         - "{{ configuracion_archivos }}"
+      tags:
+        - services
+    - debug:
+         msg: "Se configura los demonios basicos"
+
+    - name: Inciando demonios
+      systemd:
+         name: "{{ item.name }}"
+         state: "{{ item.state }}"
+         masked: "{{ item.mask }}"
+         enabled: "{{ item.enable }}"
+      with_items:
+         - "{{ demonios }}"
+      tags:
+        - start_demons
+    - debug:
+        msg: "Se iniciaron los servicios basicos"
+
+# Instalacion de splunk
+
+# re-configure grub for virtual machines 
+  - name: Configuracion de grub para kvm
+    block:
+    - debug:
+       msg: "Inicia bloque para configurar el grub de una maquina virtual en KVM"
+
+    - name: Tipo de equipo
+      shell: dmidecode -s system-manufacturer
+      register: VM_flag
+
+    - name: Aregar acceso por consola desde virsh
+      script: hardening_basic/files/VM_grub.sh
+      tags: 
+        - grub_KV;
+      when: VM_flag.stdout.find('QEMU') != -1
+    - debug:
+        msg: "Se agrega la configuracion para el acceso desde terminal a la consola de KVM"
+
+
+# Disable SELinux
+  - name: Deshabilitando SELinux
+    block:
+    - debug:
+       msg: "Bloque para deshabilitar SELinux "
+
+    - name: Quitando SELinux
+      lineinfile:
+         path: /etc/selinux/config
+         regexp: '^SELINUX='
+         line: SELINUX=disabled
+      tags:
+        - disable_selinux
+    - debug:
+        msg: "Se deshabilito SELinux"
+
+# Reinicio de los hosts
+  - name: Reinicio de servidores
+    block:
+    - debug:
+         msg: "Se reiniciara el hosts {{ ansible_fqdn }} "
+
+    - name: Reinicio de servidor
+      reboot:
