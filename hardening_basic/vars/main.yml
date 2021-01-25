@@ -26,6 +26,7 @@ sudoers:
 
 configuracion_archivos:
       - { file: hardening_basic/templates/snmpd.conf.j2, dest: /etc/snmp/snmpd.conf }
+      - { file: hardening_basic/templates/ntp.conf.j2, dest: /etc/ntp.conf }
 
 demonios:
      - {name: chronyd ,state: stopped ,mask: yes , enable: no }

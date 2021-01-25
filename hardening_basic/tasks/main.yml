@@ -137,6 +137,45 @@
         msg: "Se iniciaron los servicios basicos"
 
 # Instalacion de splunk
+  - name: Instlacion del cliente de splunk
+    block:
+    - debug:
+        msg: "Inica bloque para instalar splunk "
+      
+    #- name: Copia software de splunk al servidor splunkforwarder
+    #  copy:
+    #    src: hardening_basic/files/splunkforwarder-8.0.0-1357bef0a7f6-Linux-x86_64.tgz
+    #    dest: /opt/
+    #  tags:
+    #    - spluk_copy
+    #  - debug:
+    #      msg: "Se copia software de splunk"
+
+    - name: Descomprime el software de splunk
+      unarchive:    
+         src: hardening_basic/files/splunkforwarder-8.0.0-1357bef0a7f6-Linux-x86_64.tgz
+         dest: /opt/
+      tags:
+        - splunk_unzip
+    - debug:
+        msg: "Se descomprime splunk en /opt"
+    
+    - name: Se crea comando splunk por medio de alternatives
+      alternatives:
+        name: splunk
+        link: /bin/splunk
+        path: /opt/splunkforwarder/bin/splunk
+      tags:
+       - splunk_alternatives
+    - debug:
+       msg: "Se crea comando de splunk por medio de alternatives, para habilitar el demonio se debe aceptar la licencia de splunk"
+    
+    #- name: Se crea demonio de arranque de splunk
+    #  shell: source /root/.bashrc && splunk enable boot-start 
+    #  tags:
+    #    - splunk_deamon
+    #- debug:
+    #     msg: "Se crea demonio de arranque"  
 
 # re-configure grub for virtual machines 
   - name: Configuracion de grub para kvm
