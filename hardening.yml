@@ -1,0 +1,7 @@
+---
+- hosts: new_serves
+  roles:
+    #- hardening_basic
+      #- admscripts_install
+    - CIS
+      #- pre_cdh
