@@ -1,0 +1,60 @@
+---
+# vars file for CIS
+
+#services:
+#   - { name: xinetd }
+#   - { name: avahi-daemon }
+#   - { name: cupsn }
+#   - { name: dhcpd }
+#   - { name: slapd }
+#   - { name: nfs  }
+#   - { name: nfs-server  }
+#   - { name: named }
+#   - { name: vsftpd }
+#  - { name: httpd }
+#   - { name: dovecot }
+#   - { name: smb }
+#   - { name: squid }
+#   - { name: ypserv }
+#   - { name: rsh.socket  }
+#   - { name: rlogin.socket  }
+#   - { name: rexec.socket }
+#   - { name: ntalk }
+#   - { name: telnet.socket }
+#   - { name: tftp.socket  }
+#   - { name: rsyncd }
+
+#paquetes:
+#   - { nombre: ypbind, state: absent }
+#   - { nombre: rsh, state: absent }
+#   - { nombre: talk, state: absent }
+#   - { nombre: telnet, state: absent }
+#   - { nombre: openldap-clients, state: absent }
+#   - { nombre: tcp_wrappers, state: present }
+#   - { nombre: rsyslog, state: present }
+#   - { nombre: java-1.8.0-openjdk.x86_64, state: present }
+   
+
+hosts_ssh:
+   - { src: CIS/templates/hosts.allow.j2, dest: /etc/hosts.allow }
+   - { src: CIS/templates/hosts.deny.j2, dest: /etc/hosts.deny }
+
+cron_files:
+   - { path: /etc/crontab, state: file }
+   - { path: /etc/cron.daily, state: directory }
+   - { path: /etc/cron.hourly, state: directory }
+   - { path: /etc/cron.monthly, state: directory }
+   - { path: /etc/cron.weekly, state: directory }
+   - { path: /etc/cron.d, state: directory }
+#   - { path: /etc/cron.deny, state: file }
+   - { path: /etc/cron.allow, state: touch }
+   - { path: /etc/at.allow, state: touch }
+
+mask_files:
+   - { path: /etc/bash.bashrc }
+   - { path: /etc/profile }
+
+pam_files:
+   - { pam: su, templ: su.j2 }
+   - { pam: system-auth-ac, templ: system-auth-ac.j2 }
+   - { pam: password-auth-ac, templ: password-auth-ac.j2 }

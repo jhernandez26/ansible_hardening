@@ -1,0 +1,368 @@
+---
+# tasks file for CIS
+
+# Ansible para el Benchamark CIS nivel 2
+- name: CIS Bechmark nivel 2
+  block:
+  - debug:
+       msg: "Se realiza la configuracion para el Bechmark CIS 2"
+
+# Bloque para las configuaciones 2 services
+  - name: Service
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 2.x.x.x Services"
+
+# Se crea configuracion de sysctl propuesta por DSI
+    - name: Create sysctl 
+      template:
+        src: CIS_SUSE/templates/80-dsi.conf.j2
+        dest: /etc/sysctl.d/80-dsi.conf
+        owner: root
+        mode: 0644
+      tags:
+        - sysctl
+        - CIS_1
+        - CIS_3
+    - debug:
+        msg: "Se crea configuracion de systcl como 80-dsi.conf"
+
+# Configuración de Chronyd
+    - name: Configure chronyd
+      template:
+        src: CIS_SUSE/templates/chronyd.j2
+        dest:  /etc/sysconfig/chronyd
+        owner: root
+        mode: 0644
+      tags:
+        - chronyd configuration
+        - CIS_2
+    - debug:
+        msg: "Se configura Chronyd"
+
+# Configuración de ntpd
+    - name: Configure ntpd
+      template:
+        src: CIS_SUSE/templates/ntpd.j2
+        dest:  /etc/sysconfig/ntpd
+        owner: root
+        mode: 0644
+      tags:
+        - ntpd configuration
+        - CIS_2
+    - debug:
+        msg: "Se configura Chronyd"
+
+# Configuracion de servidores ntp para ntpd
+    - name: Servidores ntp para ntpd
+      template:
+        src: CIS_SUSE/templates/ntp.conf.j2
+        dest: /etc/ntp.conf
+        owner: root
+        mode: 0644
+      tags:
+        - ntp server ntpd
+        - CIS_2
+    - debug:
+        msg: "Se configuran los servidores ntp para ntpd"
+
+# Configuracion de servidores ntp para ntpd
+    - name: Servidores ntp para ntpd
+      template:
+        src: CIS_SUSE/templates/chrony.conf.j2
+        dest: /etc/chrony.conf
+        owner: root
+        mode: 0644
+      tags:
+        - ntp server chronyd
+        - CIS_2
+    - debug:
+        msg: "Se configuran los servidores chronyd para chronyd"
+
+# Bloque para las configuaciones 4 Logging and auditing
+  - name: Logging and auditing
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 4.x.x.x Logging and auditing"
+
+# Configure audit.conf
+    - name: audit logs are not delete
+      lineinfile: 
+        path: /etc/audit/auditd.conf
+        regexp: '^max_log_file_action'
+        line: max_log_file_action = keep_logs 
+      tags:
+        - auditd.conf
+        - CIS_4
+    - debug:
+        msg: "Se configura la retencion de logs de audit en auditd.conf"
+
+# Se agrega la activacion del auditd a nivel de grub
+    - name: Configure audit in grub
+      script: CIS_SUSE/files/grub.sh
+      tags:
+        - audit_grub
+        - CIS_4
+    - debug:
+        msg: "Se agrega el parametro audit=1 en /etc/default/grub"
+
+# Se configuran las reglas de auditd
+    - name: Configure audit rules
+      template:
+        src: CIS_SUSE/templates/audit.rules.j2
+        dest: /etc/audit/rules.d/audit.rules
+        owner: root
+        mode: 0600
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las audit rules "
+
+    - name: Configure audit rules
+      template:
+        src: CIS_SUSE/templates/DSI.rules.j2
+        dest: /etc/audit/rules.d/DSI.rules
+        owner: root
+        mode: 0600
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las DSI rules "
+
+    - name: Configure audit rules
+      template:
+        src: CIS_SUSE/templates/99-finalize.rules.j2
+        dest: /etc/audit/rules.d/99-finalize.rules
+        owner: root
+        mode: 0600
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las finalize rules "
+
+    - name: Configure 4 1 11
+      ansible.builtin.shell: find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print "-a always,exit -F path=" $1 " -F perm=x -F auid>='"$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs)"' -F auid!=4294967295 -k privileged" }' >> /etc/audit/rules.d/DSI.rules
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las finalize rules "    
+
+# Se habilita el demonio de rsyslog
+    - name: Enable rsyslog
+      systemd:
+        name: rsyslog
+        state: started
+        enabled: yes        
+      tags:
+        - rsyslog
+        - CIS_4
+    - debug:
+        msg: "Se habilita el demonio de rsyslog"
+
+# Se crea la configuiracion de rsyslog.conf
+    - name: Create rsyslog.conf
+      template:
+        src: CIS_SUSE/templates/rsyslog.conf.j2
+        dest: /etc/rsyslog.conf
+        owner: root
+        mode: 0644
+      tags:
+        - rsyslog
+        - CIS_4
+    - debug:
+        msg: "Se crea la configuracion de rsyslog.conf"
+
+# Se configura Journald
+    - name: Create rsyslog.conf
+      template:
+        src: CIS_SUSE/templates/journald.conf.j2
+        dest: /etc/systemd/journald.conf
+        owner: root
+        mode: 0644
+      tags:
+        - journald
+        - CIS_4
+    - debug:
+        msg: "Se crea la configuracion de journald.conf"
+
+
+# Bloque para las configuaciones 5 Access Authentication and Authorization
+  - name: Configure cron
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 5.x.x.x Access Authentication and Authorization"
+
+# Bloque para activar el cron
+    - name: Enable crond
+      systemd:
+        name: cron
+        state: started
+        enabled: yes
+      tags:
+        - cron
+        - CIS_5
+    - debug:
+        msg: "Se activa el demonio de /etc/audit/rules.d/DSI.rulescrond"
+
+# Colocar permisos de cron de manera adecuada
+    - name: Configure permition /etc/cron
+      file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: root
+        group: root
+        mode: '0600'
+      with_items:
+        - "{{ cron_files }}"
+      tags:
+        - cron
+        - CIS_5
+    - debug:
+        msg: "Se configuran los permisos shell/etc/crontab"
+
+# Se crea la configuiracion de sshd
+    - name: Create  sshd configuration
+      template:
+        src: CIS_SUSE/templates/sshd_config.j2
+        dest: /etc/ssh/sshd_config
+        owner: root
+        mode: 0600
+      tags:
+        - sshd
+        - CIS_5
+    - debug:
+        msg: "Se crea la configuracion de sshd_config"
+
+# Configure PASS_MIN_DAYS
+    - name: Configure PASS_MIN_DAYS_7 in login.defs
+      lineinfile: 
+        path: /etc/login.defs
+        regexp: '^PASS_MIN_DAYS'
+        line: PASS_MIN_DAYS 7 
+      tags:
+        - PASS_MIN_DAYS_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias que deben pasar para cambiar el password en /etc/login.defs"
+    
+    - name: Configure PASS_MIN_DAYS_7 in chage command
+      shell: "for i in $(cat /etc/passwd | awk -F : '{print $1}'); do chage --mindays 7 $i ;done"
+      tags:
+        - PASS_MIN_DAYS_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias que deben pasar para cambiar el password en chage"
+
+# Configure PASS_WARN_AGE
+    - name: Configuere PASS_WARN_AGE in login.defs
+      lineinfile: 
+        path: /etc/login.defs
+        regexp: '^PASS_WARN_AGE'
+        line: PASS_WARN_AGE 7
+      tags:
+        - PASS_WARN_AGE_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias  para que se de aviso para el  cambio del password en /etc/login.defs"
+
+    - name: Configuere PASS_WARN_AGE in chage command
+      shell: "for i in $(cat /etc/passwd | awk -F : '{print $1}'); do chage --warndays 7 $i ;done"
+      tags:
+        - PASS_WARN_AGE_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias  para que se de aviso para el  cambio del password en chage"
+
+    - name: Password creation requeriments
+      template:
+        src: CIS_SUSE/templates/pwquality.conf.j2
+        dest: /etc/security/pwquality.conf
+        owner: root
+        mode: 0644
+      tags:
+        - password_creation
+        - CIS_5
+    - debug:
+        msg: "Se configura los requerimientos para la creacion de password"
+
+# Configure  the  umask 
+    - name: Configure umask
+      replace: 
+        path: "{{ item.path }}"
+        regexp: '\s{1,4}umask\s[0-9]+'
+        replace: '    umask 027'
+      with_items:
+        - "{{ mask_files }}"
+      tags:
+        - umask
+        - CIS_5
+    - debug:
+        msg: "Se configura umask 022"
+
+# Configure  the  umask 
+    - name: Configure umask
+      replace: 
+        path: "{{ item.path }}"
+        regexp: '^.*TMOUT'
+        replace: '#TMOUT'
+      with_items:
+        - "{{ mask_files }}"
+      tags:
+        - umask
+        - CIS_5
+    - debug:
+        msg: "Se comenta la configuracion de TMOUT si existe"
+
+
+# Configurate the TMOUT
+    - name: Configure TMOUT
+      lineinfile:
+        path: "{{ item.path }}"
+        line: "if [[ $(readonly | grep -ci \"TMOUT\") == '0' ]];then\n\tTMOUT=900\n\treadonly TMOUT\n\texport TMOUT\nfi" 
+      with_items:
+        - "{{ mask_files }}"
+      tags:
+        - TMOUT
+        - CIS_5
+    - debug:
+        msg: "Se configura el TMOUT a 600"
+
+    - name: Remove content TMOUT.sh
+      ansible.builtin.shell: cat /dev/null > /etc/profile.d/TMOUT.sh
+      tags:
+        - TMOUT
+        - CIS_5
+    - debug:
+        msg: "Se elimina el contenido de TMOUT.sh"
+        
+
+# Configure the module pam for su
+    - name: Configure  pam
+      template:
+        src: CIS_SUSE/templates/{{ item.templ }}
+        dest: /etc/pam.d/{{ item.pam }}
+        owner: root
+        mode: 0644
+      with_items:
+        - "{{ pam_files }}"
+      tags:
+        - su
+        - CIS_5
+    - debug:
+        msg: "Configuracion del modulo de PAM para su"
+
+  # Create /root/bin for PATH integrity
+    - name: create /root/bin
+      file:
+        path: /root/bin
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+      tags:
+        - root_bin
+        - CIS_5

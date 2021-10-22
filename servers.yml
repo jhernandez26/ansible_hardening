@@ -1,7 +1,9 @@
 [new_serves:vars]
 ansible_user = root 
-#ansible_password = root123
 ansible_password = root123
+#ansible_password = Gruposalinas2018
 
 [new_serves]
-10.96.247.61
+#10.97.178.137
+10.97.175.39
+10.97.175.103

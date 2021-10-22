@@ -3,5 +3,5 @@
   roles:
     #- hardening_basic
       #- admscripts_install
-    - CIS
+    - CIS_SUSE
       #- pre_cdh

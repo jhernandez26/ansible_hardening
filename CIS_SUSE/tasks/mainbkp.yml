@@ -255,7 +255,6 @@
       tags:
         - sysctl
         - CIS_1
-        - CIS_3
     - debug:
         msg: "Se crea configuracion de systcl como 80-dsi.conf"
 
@@ -373,7 +372,7 @@
       tags:
         - clients_remove
         - CIS_2
-    - debug: 
+    - debug:
         msg: "Se eliminan los clientes no necesarios y se instalan paquetes recomendados por el CIS"
 
 # Configuración de Chronyd
