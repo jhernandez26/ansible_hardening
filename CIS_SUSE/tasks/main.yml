@@ -13,6 +13,139 @@
     - debug:
         msg: "Se inicia bloque para aplicar los puntos 2.x.x.x Services"
 
+# Configura e instalacion de  IPtables 
+    - name: Install iptables
+      zypper:
+        name: iptables
+        state: present
+      tags:
+        - iptables
+        - CIS_3
+    - debug: 
+         msg: "Se instala los paquetes de iptables"
+ 
+    - name: Create IPTABLES  Services configuration
+      template:
+        src: CIS_SUSE/templates/iptables.service.j2
+        dest: /usr/lib/systemd/system/iptables.service
+        owner: root
+        mode: 755
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se genera la configuracion de iptables.service"
+      
+    - name: Create directorio IPTABLES 
+      file: 
+        path: /usr/lib/iptables
+        state: directory
+        owner: root
+        group: root
+        mode: 755
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se crea el directorio de iptables"
+
+    - name: Create iptables.init  configuration
+      template:
+        src: CIS_SUSE/templates/iptables.init.j2
+        dest: /usr/lib/iptables/iptables.init
+        owner: root
+        mode: 755
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se genera la configuracion de iptables.init" 
+
+    - name: Create ip6tables.init  configuration
+      template:
+        src: CIS_SUSE/templates/ip6tables.init.j2
+        dest: /usr/lib/iptables/ip6tables.init
+        owner: root
+        mode: 755
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se genera la configuracion de ip6tables.init" 
+
+    - name: Create functions para iptables  configuration
+      template:
+        src: CIS_SUSE/templates/functions.j2
+        dest:  /etc/init.d/functions
+        owner: root
+        mode: 774
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se genera la configuracion de ip6tables.init"
+
+    - name: Create directorio /var/lock/subsys
+      file: 
+        path: /var/lock/subsys
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se crea el directorio de subsys"
+
+    - name: touch iptables
+      ansible.builtin.shell: touch /var/lock/subsys/iptables
+      tags:
+      
+        - CIS_3
+    - debug:
+        msg: "Se configura el touch en lock "    
+
+# Se colocan iptables
+    - name: set iptables
+      template:
+        src: CIS_SUSE/templates/iptables.j2
+        dest: /etc/sysconfig/iptables
+        owner: root
+        mode: 0600
+      notify:
+        - restart_iptables
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se colocan iptables basicas"
+
+
+#Se verifica si el equipo usa particion vfat    
+    - name: Tipo de equipo
+      shell: "cat /etc/fstab | grep vfat | wc -l"
+      register: fs_vfat
+      tags:
+        - CIS_1
+        - CIS_3
+    - debug:
+        msg: " El equipos {{ ansible_fqdn }}  tiene un total de {{ fs_vfat.stdout }} particiones vfat"
+        verbosity: 3
+
+    - name: Disable unused filesystems
+      template:
+        src: CIS_SUSE/templates/CIS.conf.j2
+        dest: /etc/modprobe.d/CIS.conf
+        owner: root
+        mode: 0644
+      tags:
+        - crete_CIS.conf
+        - CIS_1
+        - CIS_3
+    - debug:
+        msg: "Creacion del archivo  CIS.conf en /etc/modprobe.d/ "
+
 # Se crea configuracion de sysctl propuesta por DSI
     - name: Create sysctl 
       template:
@@ -26,6 +159,19 @@
         - CIS_3
     - debug:
         msg: "Se crea configuracion de systcl como 80-dsi.conf"
+
+# Deshabilando IPv6
+    - name: Disable IPv6
+      template:
+        src: CIS_SUSE/templates/95-ipv6.conf.j2
+        dest: /etc/sysctl.d/95-ipv6.conf
+        owner: root
+        mode: 0644
+      tags:
+        - ipv6
+        - CIS_3
+    - debug:
+        msg: "Deshabilitando IPv6"
 
 # Configuración de Chronyd
     - name: Configure chronyd
@@ -42,7 +188,7 @@
 
 # Configuración de ntpd
     - name: Configure ntpd
-      template:
+      template: 
         src: CIS_SUSE/templates/ntpd.j2
         dest:  /etc/sysconfig/ntpd
         owner: root
@@ -92,7 +238,7 @@
         regexp: '^max_log_file_action'
         line: max_log_file_action = keep_logs 
       tags:
-        - auditd.conf
+        - auditd.confsubsys
         - CIS_4
     - debug:
         msg: "Se configura la retencion de logs de audit en auditd.conf"
@@ -117,7 +263,7 @@
         - audit_rules
         - CIS_4
     - debug:
-        msg: "Se configuran las audit rules "
+        msg: "Se configuran las audpamit rules "
 
     - name: Configure audit rules
       template:
@@ -129,7 +275,7 @@
         - audit_rules
         - CIS_4
     - debug:
-        msg: "Se configuran las DSI rules "
+        msg: "Se configuran las Dansible.builtin.shell:SI rules "
 
     - name: Configure audit rules
       template:
@@ -223,6 +369,18 @@
         - CIS_5
     - debug:
         msg: "Se configuran los permisos shell/etc/crontab"
+
+# Elimina el con deny y habilita el cron allow
+    - name: Ensure cron is restricted to authorized users
+      ansible.builtin.shell: rm /etc/cron.deny & touch /etc/cron.allow & chown root:root /etc/cron.allow & chmod u-x,og-rwx /etc/cron.allow
+      tags:
+        - TMOUT
+        - CIS_5
+        - CIS_5.1
+    - debug:
+        msg: "Ensure cron is restricted to authorized users"
+
+
 
 # Se crea la configuiracion de sshd
     - name: Create  sshd configuration
