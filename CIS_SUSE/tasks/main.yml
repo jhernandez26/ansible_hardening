@@ -1,7 +1,6 @@
----
 # tasks file for CIS
-
 # Ansible para el Benchamark CIS nivel 2
+---
 - name: CIS Bechmark nivel 2
   block:
   - debug:
@@ -13,11 +12,12 @@
     - debug:
         msg: "Se inicia bloque para aplicar los puntos 2.x.x.x Services"
 
-# Configura e instalacion de  IPtables 
+# Configuracion e instalacion de  IPtables 
     - name: Install iptables
       zypper:
         name: iptables
         state: present
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -29,7 +29,8 @@
         src: CIS_SUSE/templates/iptables.service.j2
         dest: /usr/lib/systemd/system/iptables.service
         owner: root
-        mode: 755
+        mode: 0755
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -42,7 +43,8 @@
         state: directory
         owner: root
         group: root
-        mode: 755
+        mode: 0755
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -54,7 +56,8 @@
         src: CIS_SUSE/templates/iptables.init.j2
         dest: /usr/lib/iptables/iptables.init
         owner: root
-        mode: 755
+        mode: 0755
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -66,7 +69,8 @@
         src: CIS_SUSE/templates/ip6tables.init.j2
         dest: /usr/lib/iptables/ip6tables.init
         owner: root
-        mode: 755
+        mode: 0755
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -78,7 +82,8 @@
         src: CIS_SUSE/templates/functions.j2
         dest:  /etc/init.d/functions
         owner: root
-        mode: 774
+        mode: 0774
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -92,6 +97,7 @@
         owner: root
         group: root
         mode: 0755
+      become: yes
       tags:
         - iptables
         - CIS_3
@@ -100,19 +106,20 @@
 
     - name: touch iptables
       ansible.builtin.shell: touch /var/lock/subsys/iptables
+      become: yes
       tags:
-      
+        - iptables
         - CIS_3
     - debug:
         msg: "Se configura el touch en lock "    
 
-# Se colocan iptables
     - name: set iptables
       template:
         src: CIS_SUSE/templates/iptables.j2
         dest: /etc/sysconfig/iptables
         owner: root
         mode: 0600
+      become: yes
       notify:
         - restart_iptables
       tags:
@@ -121,6 +128,16 @@
     - debug:
         msg: "Se colocan iptables basicas"
 
+    - name: Enable servicio Iptables
+      service:
+        name: iptables
+        enabled: yes
+        state: restarted
+      become: yes
+      tags:
+       - services
+    - debug:
+        msg: "Se reinicia Servicio de Iptables"
 
 #Se verifica si el equipo usa particion vfat    
     - name: Tipo de equipo
