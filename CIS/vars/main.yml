@@ -1,38 +1,38 @@
 ---
 # vars file for CIS
 
-#services:
-#   - { name: xinetd }
-#   - { name: avahi-daemon }
-#   - { name: cupsn }
-#   - { name: dhcpd }
-#   - { name: slapd }
-#   - { name: nfs  }
-#   - { name: nfs-server  }
-#   - { name: named }
-#   - { name: vsftpd }
-#  - { name: httpd }
-#   - { name: dovecot }
-#   - { name: smb }
-#   - { name: squid }
-#   - { name: ypserv }
-#   - { name: rsh.socket  }
-#   - { name: rlogin.socket  }
-#   - { name: rexec.socket }
-#   - { name: ntalk }
-#   - { name: telnet.socket }
-#   - { name: tftp.socket  }
-#   - { name: rsyncd }
+services:
+   - { name: xinetd }
+   - { name: avahi-daemon }
+   - { name: cupsn }
+   - { name: dhcpd }
+   - { name: slapd }
+   - { name: nfs  }
+   - { name: nfs-server  }
+   - { name: named }
+   - { name: vsftpd }
+   - { name: httpd }
+   - { name: dovecot }
+   - { name: smb }
+   - { name: squid }
+   - { name: ypserv }
+   - { name: rsh.socket  }
+   - { name: rlogin.socket  }
+   - { name: rexec.socket }
+   - { name: ntalk }
+   - { name: telnet.socket }
+   - { name: tftp.socket  }
+   - { name: rsyncd }
 
-#paquetes:
-#   - { nombre: ypbind, state: absent }
-#   - { nombre: rsh, state: absent }
-#   - { nombre: talk, state: absent }
-#   - { nombre: telnet, state: absent }
-#   - { nombre: openldap-clients, state: absent }
-#   - { nombre: tcp_wrappers, state: present }
-#   - { nombre: rsyslog, state: present }
-#   - { nombre: java-1.8.0-openjdk.x86_64, state: present }
+paquetes:
+   - { nombre: ypbind, state: absent }
+   - { nombre: rsh, state: absent }
+   - { nombre: talk, state: absent }
+   - { nombre: telnet, state: absent }
+   - { nombre: openldap-clients, state: absent }
+   - { nombre: tcp_wrappers, state: present }
+   - { nombre: rsyslog, state: present }
+   - { nombre: java-1.8.0-openjdk.x86_64, state: present }
    
 
 hosts_ssh:

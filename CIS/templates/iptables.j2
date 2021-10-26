@@ -1,4 +1,4 @@
-1# Configuracion IPTables para NiFi
+# Configuracion IPTables para NiFi
 *filter
 
 ## Reset counters and default Policies
@@ -47,8 +47,8 @@
 ## Sysadmin users
 -A INPUT -s 10.50.166.162   -m comment --comment "SYSADMIN:operekewrkst01.baz.corp"                 -j SYSADMINS
 -A INPUT -s 10.50.166.90    -m comment --comment "SYSADMIN:operekewrkst02.baz.corp"                 -j SYSADMINS
--A INPUT -s 10.50.166.92    -m comment --comment "SYSADMIN:operekewrkst03.baz.corp"                 -j SYSADMINS
--A INPUT -s 10.50.166.83    -m comment --comment "SYSADMIN:operekewrkst04.baz.corp"                 -j SYSADMINS
+-A INPUT -s 10.50.166.92    -m comment --comment "SYSADMIN:operekewrkst04.baz.corp"                 -j SYSADMINS
+-A INPUT -s 10.50.166.83    -m comment --comment "SYSADMIN:operekewrkst05.baz.corp"                 -j SYSADMINS
 -A INPUT -s 10.50.166.234    -m comment --comment "SYSADMIN:operekewrkst05.baz.corp"                -j SYSADMINS
 
 ## Trusted Servers Iterno

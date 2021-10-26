@@ -1,3 +1,20 @@
+{% if 'aws' in ansible_fqdn %}
+# sec.name source community
+com2sec local localhost MONITOREO
+com2sec redmonbaz 10.96.0.0/24 MONITOREO
+# groupName securityModel securityName
+group MyRWGroup v1 local
+group MyRWGroup v2c local
+group MyRWGroup usm local
+group GpoMonBAZ v1 redmonbaz
+group GpoMonBAZ v2c redmonbaz
+group GpoMonBAZ usm redmonbaz
+#name incl/excl subtree mask(optional)
+view all included .1
+# group context sec.model sec.level prefix read write notif
+access MyRWGroup "" any noauth exact all all all
+access GpoMonBAZ "" any noauth exact all all all
+{% else %}
 # sec.name source community
 #com2sec local localhost MONITOREO
 com2sec redmonbaz80 10.80.204.0/24 MONITOREO
@@ -18,3 +35,4 @@ view all included .1
 #access MyRWGroup "" any noauth exact all all all
 access GpoMonBAZ80 "" any noauth exact all none none
 access GpoMonBAZ82 "" any noauth exact all none none
+{% endif %}

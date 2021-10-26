@@ -17,7 +17,7 @@
       zypper:
         name: iptables
         state: present
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -30,7 +30,7 @@
         dest: /usr/lib/systemd/system/iptables.service
         owner: root
         mode: 0755
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -44,7 +44,7 @@
         owner: root
         group: root
         mode: 0755
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -57,7 +57,7 @@
         dest: /usr/lib/iptables/iptables.init
         owner: root
         mode: 0755
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -70,7 +70,7 @@
         dest: /usr/lib/iptables/ip6tables.init
         owner: root
         mode: 0755
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -83,7 +83,7 @@
         dest:  /etc/init.d/functions
         owner: root
         mode: 0774
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -97,7 +97,7 @@
         owner: root
         group: root
         mode: 0755
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -106,7 +106,7 @@
 
     - name: touch iptables
       ansible.builtin.shell: touch /var/lock/subsys/iptables
-      become: yes
+      
       tags:
         - iptables
         - CIS_3
@@ -119,9 +119,7 @@
         dest: /etc/sysconfig/iptables
         owner: root
         mode: 0600
-      become: yes
-      notify:
-        - restart_iptables
+      
       tags:
         - iptables
         - CIS_3
@@ -130,19 +128,24 @@
 
     - name: Enable servicio Iptables
       service:
-        name: iptables
+        name: "{{ item }}"
         enabled: yes
-        state: restarted
-      become: yes
+        state: started
+      
+      loop:
+        - iptables
+        - iptables
       tags:
        - services
     - debug:
         msg: "Se reinicia Servicio de Iptables"
 
+
 #Se verifica si el equipo usa particion vfat    
     - name: Tipo de equipo
       shell: "cat /etc/fstab | grep vfat | wc -l"
       register: fs_vfat
+      
       tags:
         - CIS_1
         - CIS_3
@@ -156,6 +159,7 @@
         dest: /etc/modprobe.d/CIS.conf
         owner: root
         mode: 0644
+      
       tags:
         - crete_CIS.conf
         - CIS_1
@@ -170,6 +174,7 @@
         dest: /etc/sysctl.d/80-dsi.conf
         owner: root
         mode: 0644
+      
       tags:
         - sysctl
         - CIS_1
@@ -184,6 +189,7 @@
         dest: /etc/sysctl.d/95-ipv6.conf
         owner: root
         mode: 0644
+      
       tags:
         - ipv6
         - CIS_3
@@ -197,6 +203,7 @@
         dest:  /etc/sysconfig/chronyd
         owner: root
         mode: 0644
+      
       tags:
         - chronyd configuration
         - CIS_2
@@ -210,6 +217,7 @@
         dest:  /etc/sysconfig/ntpd
         owner: root
         mode: 0644
+      
       tags:
         - ntpd configuration
         - CIS_2
@@ -223,6 +231,7 @@
         dest: /etc/ntp.conf
         owner: root
         mode: 0644
+      
       tags:
         - ntp server ntpd
         - CIS_2
@@ -236,6 +245,7 @@
         dest: /etc/chrony.conf
         owner: root
         mode: 0644
+      
       tags:
         - ntp server chronyd
         - CIS_2
@@ -254,6 +264,7 @@
         path: /etc/audit/auditd.conf
         regexp: '^max_log_file_action'
         line: max_log_file_action = keep_logs 
+      
       tags:
         - auditd.confsubsys
         - CIS_4
@@ -263,6 +274,7 @@
 # Se agrega la activacion del auditd a nivel de grub
     - name: Configure audit in grub
       script: CIS_SUSE/files/grub.sh
+      
       tags:
         - audit_grub
         - CIS_4
@@ -276,6 +288,7 @@
         dest: /etc/audit/rules.d/audit.rules
         owner: root
         mode: 0600
+      
       tags:
         - audit_rules
         - CIS_4
@@ -288,6 +301,7 @@
         dest: /etc/audit/rules.d/DSI.rules
         owner: root
         mode: 0600
+      
       tags:
         - audit_rules
         - CIS_4
@@ -300,6 +314,7 @@
         dest: /etc/audit/rules.d/99-finalize.rules
         owner: root
         mode: 0600
+      
       tags:
         - audit_rules
         - CIS_4
@@ -308,6 +323,7 @@
 
     - name: Configure 4 1 11
       ansible.builtin.shell: find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print "-a always,exit -F path=" $1 " -F perm=x -F auid>='"$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs)"' -F auid!=4294967295 -k privileged" }' >> /etc/audit/rules.d/DSI.rules
+      
       tags:
         - audit_rules
         - CIS_4
@@ -320,6 +336,7 @@
         name: rsyslog
         state: started
         enabled: yes        
+      
       tags:
         - rsyslog
         - CIS_4
@@ -333,6 +350,7 @@
         dest: /etc/rsyslog.conf
         owner: root
         mode: 0644
+      
       tags:
         - rsyslog
         - CIS_4
@@ -346,6 +364,7 @@
         dest: /etc/systemd/journald.conf
         owner: root
         mode: 0644
+      
       tags:
         - journald
         - CIS_4
@@ -365,6 +384,7 @@
         name: cron
         state: started
         enabled: yes
+      
       tags:
         - cron
         - CIS_5
@@ -381,6 +401,7 @@
         mode: '0600'
       with_items:
         - "{{ cron_files }}"
+      
       tags:
         - cron
         - CIS_5
@@ -390,6 +411,7 @@
 # Elimina el con deny y habilita el cron allow
     - name: Ensure cron is restricted to authorized users
       ansible.builtin.shell: rm /etc/cron.deny & touch /etc/cron.allow & chown root:root /etc/cron.allow & chmod u-x,og-rwx /etc/cron.allow
+      
       tags:
         - TMOUT
         - CIS_5
@@ -406,6 +428,7 @@
         dest: /etc/ssh/sshd_config
         owner: root
         mode: 0600
+      
       tags:
         - sshd
         - CIS_5
@@ -418,6 +441,7 @@
         path: /etc/login.defs
         regexp: '^PASS_MIN_DAYS'
         line: PASS_MIN_DAYS 7 
+      
       tags:
         - PASS_MIN_DAYS_7
         - CIS_5
@@ -426,6 +450,7 @@
     
     - name: Configure PASS_MIN_DAYS_7 in chage command
       shell: "for i in $(cat /etc/passwd | awk -F : '{print $1}'); do chage --mindays 7 $i ;done"
+      
       tags:
         - PASS_MIN_DAYS_7
         - CIS_5
@@ -438,6 +463,7 @@
         path: /etc/login.defs
         regexp: '^PASS_WARN_AGE'
         line: PASS_WARN_AGE 7
+      
       tags:
         - PASS_WARN_AGE_7
         - CIS_5
@@ -446,6 +472,7 @@
 
     - name: Configuere PASS_WARN_AGE in chage command
       shell: "for i in $(cat /etc/passwd | awk -F : '{print $1}'); do chage --warndays 7 $i ;done"
+      
       tags:
         - PASS_WARN_AGE_7
         - CIS_5
@@ -458,6 +485,7 @@
         dest: /etc/security/pwquality.conf
         owner: root
         mode: 0644
+      
       tags:
         - password_creation
         - CIS_5
@@ -472,6 +500,7 @@
         replace: '    umask 027'
       with_items:
         - "{{ mask_files }}"
+      
       tags:
         - umask
         - CIS_5
@@ -486,6 +515,7 @@
         replace: '#TMOUT'
       with_items:
         - "{{ mask_files }}"
+      
       tags:
         - umask
         - CIS_5
@@ -500,6 +530,7 @@
         line: "if [[ $(readonly | grep -ci \"TMOUT\") == '0' ]];then\n\tTMOUT=900\n\treadonly TMOUT\n\texport TMOUT\nfi" 
       with_items:
         - "{{ mask_files }}"
+      
       tags:
         - TMOUT
         - CIS_5
@@ -508,6 +539,7 @@
 
     - name: Remove content TMOUT.sh
       ansible.builtin.shell: cat /dev/null > /etc/profile.d/TMOUT.sh
+      
       tags:
         - TMOUT
         - CIS_5
@@ -522,6 +554,7 @@
         dest: /etc/pam.d/{{ item.pam }}
         owner: root
         mode: 0644
+      
       with_items:
         - "{{ pam_files }}"
       tags:
@@ -538,6 +571,21 @@
         owner: root
         group: root
         mode: '0750'
+      
       tags:
         - root_bin
         - CIS_5
+# Configure  the  umask 
+    - name: Configure umask
+      replace: 
+        path: "{{ item.path }}"
+        regexp: '\s{1,4}umask\s[0-9]+'
+        replace: '    umask 027'
+      with_items:
+        - "{{ mask_files }}"
+      
+      tags:
+        - umask
+        - CIS_5
+    - debug:
+        msg: "Se configura umask 022"
