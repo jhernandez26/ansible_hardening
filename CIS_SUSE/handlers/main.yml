@@ -1,0 +1,19 @@
+---
+# handlers file for CIS
+#- name: restart_postfix
+#  systemd:
+#    name: postfix
+#    state: restarted
+#- debug:
+#    msg: "Reinicio de postfix"
+
+- name: restart_sshd
+  systemd:
+    name: sshd
+    state: restarted
+- debug:
+    msg: "Reinicio sshd"
+
+
+
+

@@ -37,7 +37,7 @@
     - debug:
         msg: "Se crean los grupos basicos para operaciones"
 
-# Creacion de usuarios de operciones con el password temporal123
+# Creacion de opereke con el password temporal123
     - debug:
         msg: "Se va crear el usuario  {{ item.usuario }} "
         verbosity: 3
@@ -51,8 +51,7 @@
         uid: "{{ item.uid }}"
         group: "{{ item.grupo }}"
         groups: sysadmins
-        password: $6$LGWciU4b2txiX25Z$KRx3/8Cv3t.IKmm2r8lAHYr.ulJTpHB2v3d5Ln//.RvCGZsMXI8cP0UcTI1fdUrcM7IjiR84suOOIWoLlVop81
-        create_home: True
+        password: $6$LGWciU4b2txiX25Z$KRx3/8Cv3t.IKmm2r8lAHYr.ulJTpHB2v3d5Ln//.RvCGZsMXI8cP0UcTI1fdUrcM7IjiR84suOOIWoLlVop81 
       with_items: '{{ usuarios_grupos }}'
       tags:
         - create_user
@@ -74,35 +73,9 @@
         - "{{ paquete }}"
       tags:
         - install_packages 
+      ignore_errors: yes
     - debug:
        msg: "Se instalaron los paquetes"
-
-# Bloque para colocar las sudoers
-  - name: Creacion de sudoer para el usuario de ansible
-    block:
-    - debug:
-       msg: "Bloque de reglas de sudoers basico"
-
-    - debug:
-        msg: "Se coloca la regla de sudoer  {{ item.file }} "
-        verbosity: 3
-      with_items:
-         - "{{ sudoers }}"
-
-# Se coloca reglas de sudoer para los usuarios ansible, app_care y el grupo sysadmins
-    - name: Se coloca configuracion de sudoers
-      template:
-         src: "{{ item.file }}"
-         dest: "{{ item.dest }}"
-         owner: root
-         mode: 0444
-         validate: /sbin/visudo -c -f %s
-      with_items:
-          - "{{ sudoers }}"
-      tags:
-        - sudoers
-    - debug:
-       msg: "Se coloca el sudoers basico"
 
 # Bloque para colocar la configuracion basica de software
   - name: Configuracion basica de software
@@ -129,6 +102,7 @@
          state: "{{ item.state }}"
          masked: "{{ item.mask }}"
          enabled: "{{ item.enable }}"
+      ignore_errors: yes
       with_items:
          - "{{ demonios }}"
       tags:
@@ -137,6 +111,61 @@
         msg: "Se iniciaron los servicios basicos"
 
 # Instalacion de splunk
+  - name: Instlacion del cliente de splunk
+    block:
+    - debug:
+        msg: "Inica bloque para instalar splunk "
+
+    - name: Descomprime el software de splunk
+      unarchive:    
+         src: hardening_basic/files/splunkforwarder-8.0.0-1357bef0a7f6-Linux-x86_64.tgz
+         dest: /opt/
+      tags:
+        - splunk
+    - debug:
+        msg: "Se descomprime splunk en /opt"
+    
+    - name: Se crea comando splunk por medio de alternatives
+      alternatives:
+        name: splunk
+        link: /bin/splunk
+        path: /opt/splunkforwarder/bin/splunk
+      tags:
+       - splunk
+    - debug:
+       msg: "Se crea comando de splunk por medio de alternatives, para habilitar el demonio se debe aceptar la licencia de splunk"
+
+# Se coloca la configuracion para el usuario admin_splunk con el password HhGLy%0t7fJr7QJeNRGF
+    - name: Configurqacion splunk
+      template:
+         src: hardening_basic/templates/user-seed.conf.j2
+         dest: /opt/splunkforwarder/etc/system/local/user-seed.conf
+         owner: root
+         mode: 0744
+      tags:
+       - splunk
+    - debug:
+         msg: "Se configura usuario y password de splunk"
+
+# Se inicia splunk
+    - name: Se crea demonio de arranque de splunk
+      shell: source /root/.bashrc && splunk start  --accept-license && splunk enable boot-start 
+      tags:
+        - splunk
+    - debug:
+         msg: "Se inicia y  crea demonio de arranque para splunk"  
+
+# Acctiva splunk para inicio de SO.        
+    - name: Inciando demonios
+      systemd:
+         name: splunk
+         state: "{{ item.state }}"
+         enabled: "{{ item.enable }}"
+      ignore_errors: yes
+      tags:
+        - start_demons
+    - debug:
+        msg: "Se iniciaron los servicios basicos"
 
 # re-configure grub for virtual machines 
   - name: Configuracion de grub para kvm
@@ -167,17 +196,17 @@
       lineinfile:
          path: /etc/selinux/config
          regexp: '^SELINUX='
-         line: SELINUX=disabled
+         line: SELINUX=permissive
       tags:
         - disable_selinux
     - debug:
         msg: "Se deshabilito SELinux"
 
 # Reinicio de los hosts
-  - name: Reinicio de servidores
-    block:
-    - debug:
-         msg: "Se reiniciara el hosts {{ ansible_fqdn }} "
-
-    - name: Reinicio de servidor
-      reboot:
+#  - name: Reinicio de servidores
+#    block:
+#    - debug:
+#         msg: "Se reiniciara el hosts {{ ansible_fqdn }} "
+#
+#           #- name: Reinicio de servidor
+#           #  reboot:

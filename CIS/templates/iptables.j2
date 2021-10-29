@@ -1,0 +1,133 @@
+# Configuracion IPTables para NiFi
+*filter
+
+## Reset counters and default Policies
+:INPUT DROP     [0:0]
+:FORWARD DROP   [0:0]
+:OUTPUT DROP    [0:0]
+
+## INPUT LOG AND DROP Chain
+-N INPUT_LOG_AND_DROP
+-A INPUT -p icmp --icmp-type timestamp-request -j DROP
+-A INPUT_LOG_AND_DROP -j LOG --log-prefix "iptables-input-dropped: " --log-level 4
+-A INPUT_LOG_AND_DROP -j ACCEPT
+
+## OUTPUT LOG AND DROP Chain
+-N OUTPUT_LOG_AND_DROP
+-A OUTPUT -p icmp --icmp-type timestamp-reply -j DROP
+-A OUTPUT_LOG_AND_DROP -j LOG --log-prefix "iptables-output-dropped: " --log-level 4
+-A OUTPUT_LOG_AND_DROP -j ACCEPT
+
+## SYSADMINS Chain
+-N SYSADMINS
+-A SYSADMINS -p icmp                                      -j ACCEPT -m comment --comment "ICMP Traffic"
+-A SYSADMINS -p tcp -m multiport --dports 22,80,88        -j ACCEPT -m comment --comment "SO Admin Services"
+-A SYSADMINS -j INPUT_LOG_AND_DROP
+
+## SCOM Chain
+-N SCOM
+-A SCOM -p icmp                                           -j ACCEPT -m comment --comment "ICMP Traffic"
+-A SCOM -p tcp -m multiport --dports 22,1270,8081,7183    -j ACCEPT -m comment --comment "SCOM Services TCP"
+-A SCOM -p udp -m multiport --dports 161,162              -j ACCEPT -m comment --comment "SCOM Services UDP"
+-A SCOM -j INPUT_LOG_AND_DROP
+
+## Loopback traffic
+-A INPUT  -i lo          -j ACCEPT
+-A OUTPUT -o lo          -j ACCEPT
+-A INPUT  -s 127.0.0.0/8 -j DROP
+
+## NEW,ESTABLISHED Connections
+-A OUTPUT -p tcp  -m state --state NEW,ESTABLISHED -j ACCEPT
+-A OUTPUT -p udp  -m state --state NEW,ESTABLISHED -j ACCEPT
+-A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT
+-A INPUT  -p tcp  -m state --state ESTABLISHED     -j ACCEPT
+-A INPUT  -p udp  -m state --state ESTABLISHED     -j ACCEPT
+-A INPUT  -p icmp -m state --state ESTABLISHED     -j ACCEPT
+
+## Sysadmin users
+-A INPUT -s 10.50.166.162   -m comment --comment "SYSADMIN:operekewrkst01.baz.corp"                 -j SYSADMINS
+-A INPUT -s 10.50.166.90    -m comment --comment "SYSADMIN:operekewrkst02.baz.corp"                 -j SYSADMINS
+-A INPUT -s 10.50.166.92    -m comment --comment "SYSADMIN:operekewrkst04.baz.corp"                 -j SYSADMINS
+-A INPUT -s 10.50.166.83    -m comment --comment "SYSADMIN:operekewrkst05.baz.corp"                 -j SYSADMINS
+-A INPUT -s 10.50.166.234    -m comment --comment "SYSADMIN:operekewrkst05.baz.corp"                -j SYSADMINS
+
+## Trusted Servers Iterno
+
+
+
+### Services
+-A INPUT -s 10.53.21.136    -m comment --comment "tserver:NTP insurgentes balancer"         -j ACCEPT
+-A INPUT -s 10.82.32.202    -m comment --comment "tserver:NTP kio balancer"                 -j ACCEPT
+-A INPUT -s 10.53.21.221    -m comment --comment "tserver:SMTP balancer"                    -j ACCEPT
+-A INPUT -s 10.20.42.22     -m comment --comment "tserver:DNS Insurgentes"                  -j ACCEPT
+-A INPUT -s 10.20.142.22    -m comment --comment "tserver:DNS Ajusco"                       -j ACCEPT
+-A INPUT -s 10.20.103.226   -m comment --comment "tserver:DNS KIO"                          -j ACCEPT
+
+### Cyberark
+-A INPUT -s 10.50.158.43    -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.50.158.45    -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.50.158.74    -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.64.16.175    -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.64.16.173    -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.64.248.31    -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.64.248.140   -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+-A INPUT -s 10.64.248.141   -p tcp --dport 22 -m comment --comment "tserver:Cyberark"       -j ACCEPT
+
+### Splunk
+-A INPUT -s 10.50.226.121   -p tcp --dport 8089 -m comment --comment "tserver:Splunk"       -j ACCEPT
+-A INPUT -s 10.50.226.119   -p tcp --dport 9997 -m comment --comment "tserver:Splunk"       -j ACCEPT
+
+### SCOM
+-A INPUT -s 10.80.204.125   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.126   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.127   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.128   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.192   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.193   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.194   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.195   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.196   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.80.204.197   -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.49     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.54     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.53     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.58     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.59     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.61     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.103    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.104    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.105    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.106    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.107    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.108    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.109    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.110    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.111    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.112    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.113    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.114    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.115    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.116    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.117    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.119    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.120    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.121    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.122    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.123    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.53.34.215    -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.96.0.171     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.96.0.172     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+-A INPUT -s 10.96.0.173     -m comment --comment "tserver:SCOM SNMP" -j SCOM
+
+
+### Monitoreo Aplicativo
+-A INPUT -s 10.53.28.170    -m comment --comment "tserver:Monitoreo Aplicativo" -j ACCEPT
+-A INPUT -s 10.53.28.171    -m comment --comment "tserver:Monitoreo Aplicativo" -j ACCEPT
+-A INPUT -s 10.53.28.172    -m comment --comment "tserver:Monitoreo Aplicativo" -j ACCEPT
+-A INPUT -s 10.53.34.100    -m comment --comment "tserver:Grafana"              -j ACCEPT
+
+## LOG_AND_DROP
+-A INPUT  -j INPUT_LOG_AND_DROP
+-A OUTPUT -j OUTPUT_LOG_AND_DROP
+
+COMMIT

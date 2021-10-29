@@ -1,0 +1,13 @@
+install cramfs /bin/true
+install freevxfs /bin/true
+install jffs2 /bin/true
+install hfs /bin/true
+install hfsplus /bin/true
+install squashfs /bin/true
+install udf /bin/true
+{% if fs_vfat.stdout == '0' %}
+install vfat /bin/true
+{% endif %}
+install dccp /bin/true
+install sctp /bin/true
+install usb-storage /bin/true

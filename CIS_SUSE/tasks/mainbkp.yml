@@ -1,0 +1,750 @@
+---
+# tasks file for CIS
+ 
+# Ansible para el Benchamark CIS nivel 2
+- name: CIS Bechmark nivel 2
+  block:
+  - debug:
+       msg: "Se realiza la configuracion para el Bechmark CIS 2"
+
+# Bloque para las configuaciones 1 Initial Setup
+  - name: File system configuration
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 1.x.x.x Initial Setup"
+
+# Deshabilitando filesystem inecesarios    
+
+#Se verifica si el equipo usa particion vfat    
+    - name: Tipo de equipo
+      shell: "cat /etc/fstab | grep vfat | wc -l"
+      register: fs_vfat
+      tags:
+        - CIS_1
+    - debug:
+        msg: " El equipos {{ ansible_fqdn }}  tiene un total de {{ fs_vfat.stdout }} particiones vfat"
+        verbosity: 3
+
+    - name: Disable unused filesystems
+      template:
+        src: CIS/templates/CIS.conf.j2
+        dest: /etc/modprobe.d/CIS.conf
+        owner: root
+        mode: 0644
+      tags:
+        - crete_CIS.conf
+        - CIS_1
+    - debug:
+        msg: "Creacion del archivo  CIS.conf en /etc/modprobe.d/ "
+
+# Configuracion de particiones dentro de fstab
+    - name: Configuracion de tmpfs
+      shell: "grep  tmpfs /etc/fstab | wc -l"
+      register: fs_tmpfs
+      tags:
+        - CIS_1
+    - debug:
+         msg: "El equipos {{ ansible_fqdn }}  tiene un total de {{ fs_tmpfs.stdout }} particiones tmpfs"
+         verbosity: 3
+
+    - name: Ensure configuration on /dev/shm
+      lineinfile:
+        path: /etc/fstab
+        line: "tmpfs          /dev/shm       tmpfs   defaults,noexec,nodev,nosuid     0 0"
+        create: yes 
+      when: fs_tmpfs.stdout == '0'
+      tags:
+        - tmpfs_configuration
+        - CIS_1      
+    - debug:
+        msg: "Se crea la entrada tmpfs /etc/fstab"
+    
+    - name: Configuracion de /home
+      shell: "grep  /home /etc/fstab | wc -l"
+      register: fs_home
+      tags:
+        - CIS_1
+    - debug:
+        msg: "El equipos {{ ansible_fqdn }}  tiene un total de {{ fs_home.stdout }} particiones /home"
+        verbosity: 3    
+
+    - name: Ensure configuration on /home
+      script: CIS/files/fstab_configure.sh "\s/home\s"  ,nodev
+      when: fs_home.stdout != '0'
+      tags:
+        - home_configuration
+        - CIS_1
+    - debug:
+         msg: "Se configura la particion de /home"
+
+    - name: Configuracion de /tmp
+      shell: grep  "\s/tmp" /etc/fstab | wc -l
+      register: fs_tmp
+      tags:
+        - CIS_1
+    - debug:
+        msg: "El equipos {{ ansible_fqdn }}  tiene un total de {{ fs_tmp.stdout }} particiones /tmp"
+        verbosity: 3
+    
+    - name: Ensure configuration on /tmp
+      script: CIS/files/fstab_configure.sh "\s/tmp\s"  ,nodev,nosuid
+      when: fs_tmp.stdout != '0'
+      tags:
+        - tmp_configuration
+        - CIS_1
+    - debug:
+         msg: "Se configura la particion de /tmp"
+    
+    - name: Configuracion de /var/tmp
+      shell: grep  "\s/var/tmp" /etc/fstab | wc -l
+      register: fs_vartmp
+      tags:
+        - CIS_1
+    - debug:
+        msg: "El equipos {{ ansible_fqdn }}  tiene un total de {{ fs_vartmp.stdout }} particiones /var/tmp"
+        verbosity: 3
+    
+    - name: Ensure configuration on /var/tmp
+      script: CIS/files/fstab_configure.sh "\s/var/tmp\s"  ,nodev,nosuid,noexec
+      when: fs_vartmp.stdout != '0'
+      tags:
+        - tmp_configuration
+        - CIS_1
+    - debug:
+         msg: "Se configura la particion de /var/tmp"
+        
+    - name: Formateando fstab
+      shell: cat /etc/fstab |  grep -v "#" | column -t   > /etc/fstab2 && mv -f /etc/fstab2 /etc/fstab
+      tags:
+        - CIS_1
+
+# Configuracion de stickbit
+    - name: Ensure stick bit is set on all world-writable-directories
+      shell:  df --local -P | awk {'if (NR!=1) print $6'}  | xargs -I '{ }' find '{ }' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t   
+      tags:
+        - stickbit_wwd
+        - CIS_1
+    - debug: 
+         msg: "Se aplica el stick bit en todos los directorios con escritura"
+
+# Configura e instalacion de  AIDE 
+    - name: Install AIDE
+      yum:
+        name: aide
+        state: present
+      tags:
+        - aide
+        - CIS_1
+    - debug: 
+         msg: "Se instala los paquetes de aide"
+        
+    - name: Create AIDE configuration
+      template:
+        src: CIS/templates/aide.conf.j2
+        dest: /etc/aide.conf
+        owner: root
+        mode: 0600
+      tags:
+        - aide
+        - CIS_1
+    - debug:
+        msg: "Se genera la configuracion de aide.conf"
+      
+    - name: Run AIDE
+      shell: aide --init
+      tags:
+        - aide
+        - CIS_1
+    - debug:
+        msg: "Se corre el comando aide --init" 
+
+    - name: Copy aide base
+      copy:
+        src: /var/lib/aide/aide.db.new.gz
+        dest: /var/lib/aide/aide.db.gz
+        backup: yes
+        remote_src: yes
+      tags:
+        - aide
+        - CIS_1
+    - debug:
+        msg: "Copy aide base  from /var/lib/aide/aide.db.new.gz to /var/lib/aide/aide.db.gz"
+
+    - name: Create a AIDE cron
+      cron:
+        job: "/usr/sbin/aide --check>>/var/log/aide.log&&aide --init&&cp -p /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz"
+        minute: "30"
+        hour: "0"
+        name: "AIDE check"
+      tags:
+        - aid
+        - CIS_1
+    - debug:
+        msg: "Se inserta la ejecucion de  AIDE dentro del cron de root"
+
+# Debido a la restriccion con el pexpect, es requerido que el tema del grub sea realizado a mano 
+
+# Se configura el password de grub2 configuracion no aplica debido a que la version de pexpect debe ser por lo menos 3.3.
+#    - name: Set grub2 password
+#      expect:
+#        command: grub2-setpassword
+#        responses:
+#           (?i)password: Oper4ci0n3s          
+#      tags:
+#        - grub2_password
+#    - debug:
+#        msg: "Configuracion de password para grub2"
+# Se puede copiar un grub2
+
+    - name: Determinar si usa EFI
+      shell: ls -l /boot/ | grep efi | wc -l
+      register: efi_bool
+      tags:
+        - grub2_password
+        - CIS_1
+    - debug:
+        msg: "Tiene EFI efi_bool"
+
+# Se configura el password de grub2 
+    - name:  Set grub2 password
+      template:
+        src: CIS/templates/user.cfg.j2
+        dest: /boot/grub2/user.cfg
+        owner: root
+        mode: 0600        
+      tags:
+        - grub2_password
+        - CIS_1
+    - debug:
+        msg: "Configuracion de password para grub2."
+
+# Se coloca archvio de password en EFI 
+    - name: Ensure configuration on /boot/efi/EFI/
+      template:
+        src: CIS/templates/user.cfg.j2
+        dest: /boot/efi/EFI/redhat/user.cfg
+        owner: root
+        mode: 0600 
+      when: efi_bool.stdout != '0'
+      tags:
+        - grub2_password
+        - CIS_1
+    - debug:
+         msg: "Se configura la particion de /tmp"
+
+# Se crea configuracion de limits para los core file
+    - name: Create  core file limits
+      template:
+        src: CIS/templates/90-dsi.conf.j2
+        dest: /etc/security/limits.d/90-dsi.conf
+        owner: root
+        mode: 0644
+      tags:
+        - limit
+        - CIS_1
+    - debug:
+        msg: "Se crea configuracion de limit como 90-dsi.conf"
+
+# Se crea configuracion de sysctl propuesta por DSI
+    - name: Create sysctl 
+      template:
+        src: CIS/templates/80-dsi.conf.j2
+        dest: /etc/sysctl.d/80-dsi.conf
+        owner: root
+        mode: 0644
+      tags:
+        - sysctl
+        - CIS_1
+    - debug:
+        msg: "Se crea configuracion de systcl como 80-dsi.conf"
+
+# Se crea motd de banner 
+    - name: Create motd
+      template:
+        src: CIS/templates/motd.j2
+        dest: /etc/motd
+        owner: root
+        mode: 0644
+      tags:
+        - motd
+        - CIS_1
+    - debug:
+         msg: "Se crea banner de motd"
+
+# Se crea issue.net de banner 
+    - name: Create issue.net
+      template:
+        src: CIS/templates/issue.net.j2
+        dest: /etc/issue
+        owner: root
+        mode: 0644
+      tags:
+        - issue_net
+        - CIS_1
+    - debug:
+         msg: "Se crea banner de issue net"
+
+# Se crea issue.net de banner 
+    - name: Create issue.net
+      template:
+        src: CIS/templates/issue.net.j2
+        dest: /etc/issue.net
+        owner: root
+        mode: 0644
+      tags:
+        - issue_net
+        - CIS_1
+    - debug:
+
+# Se crea directorio para almacenar logs de sudoers
+    - name: Create sudoers directory
+      file:
+        path: /var/log/sudo/
+        state: directory
+        owner: root
+        group: root
+        mode: 0750
+        recurse: yes
+      tags:
+        - sudoer_directory
+        - CIS_1
+    - debug:
+         msg: "Se crea directorio para logs de sudoers en /var/log/sudoers"
+
+# Se crea configuracion de  sudoers 
+    - name: Crete sudoers config
+      template:
+        src: CIS/templates/sudoers.j2
+        dest: /etc/sudoers
+        owner: root
+        mode: 0644
+      tags:
+        - sudoer_config
+        - CIS_1
+    - debug:
+         msg: "Se crea configuracion de sudoers"
+
+# Bloque para las configuaciones 2 services
+  - name: Service
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 2.x.x.x Services"
+
+# Deshabilita  los demonios de arranque legacy 
+    - name: Disable daemons
+      systemd:
+        name: "{{ item.name }}"
+        state: stopped
+        enabled: no
+        masked: yes
+      ignore_errors: yes
+      with_items:
+          - "{{ services }}"
+      tags:
+        - disable_deamon
+        - CIS_2  
+    - debug:
+        msg: "Disable legacy services"
+
+# Confiuracion de MTA
+    - name: Configure MTA
+      lineinfile:
+        path: /etc/postfix/main.cf
+        regexp: '^inet_interfaces'
+        line: inet_interfaces = loopback-only 
+      ignore_errors: yes
+#      notify:
+#        - restart_postfix
+      tags:
+        - MTA
+        - CIS_2
+    - debug: 
+        msg: "Se configura Mail Transfer Agents para trabajar solamente de manera local"
+    
+# Se eliminan los clientes no necesarios
+    - name: Clients are not installed and packets news
+      yum:
+        name: "{{ item.nombre }}"
+        state: "{{ item.state }}"
+      ignore_errors: yes
+      with_items:
+        - "{{ paquetes }}"
+      tags:
+        - clients_remove
+        - CIS_2
+    - debug:
+        msg: "Se eliminan los clientes no necesarios y se instalan paquetes recomendados por el CIS"
+
+# Configuración de Chronyd
+    - name: Configure chronyd
+      template:
+        src: CIS/templates/chronyd.j2
+        dest:  /etc/sysconfig/chronyd
+        owner: root
+        mode: 0644
+      tags:
+        - chronyd configuration
+        - CIS_2
+    - debug:
+        msg: "Se configura Chronyd"
+
+# Configuración de ntpd
+    - name: Configure ntpd
+      template:
+        src: CIS/templates/ntpd.j2
+        dest:  /etc/sysconfig/ntpd
+        owner: root
+        mode: 0644
+      tags:
+        - ntpd configuration
+        - CIS_2
+    - debug:
+        msg: "Se configura Chronyd"
+
+# Configuracion de servidores ntp para ntpd
+    - name: Servidores ntp para ntpd
+      template:
+        src: CIS/templates/ntp.conf.j2
+        dest: /etc/ntp.conf
+        owner: root
+        mode: 0644
+      tags:
+        - ntp server ntpd
+        - CIS_2
+    - debug:
+        msg: "Se configuran los servidores ntp para ntpd"
+
+# Configuracion de servidores ntp para ntpd
+    - name: Servidores ntp para ntpd
+      template:
+        src: CIS/templates/chrony.conf.j2
+        dest: /etc/chrony.conf
+        owner: root
+        mode: 0644
+      tags:
+        - ntp server chronyd
+        - CIS_2
+    - debug:
+        msg: "Se configuran los servidores chronyd para chronyd"
+
+# Bloque para las configuaciones 3 Network configuration
+  - name: Network
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 3.x.x.x Network configuration"
+
+# Deshabilando IPv6
+    - name: Disable IPv6
+      template:
+        src: CIS/templates/95-ipv6.conf.j2
+        dest: /etc/sysctl.d/95-ipv6.conf
+        owner: root
+        mode: 0644
+      tags:
+        - ipv6
+        - CIS_3
+    - debug:
+        msg: "Deshabilitando IPv6"
+
+# Se coloca la configuracion de hosts para openssh
+    - name: set hosts deny and hosts allow
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        mode: 0644
+      with_items:
+        - "{{ hosts_ssh }} "
+      #notify:
+      #  - restart_sshd
+      tags:
+        - hosts_ssh
+        - CIS_3
+    - debug:
+        msg: "Se coloca configuiracion de hosts allow y hosts deny de openssh"
+
+# Se colocan iptables
+    - name: set iptables
+      template:
+        src: CIS/templates/iptables.j2
+        dest: /etc/sysconfig/iptables
+        owner: root
+        mode: 0600
+      notify:
+        - restart_iptables
+      tags:
+        - iptables
+        - CIS_3
+    - debug:
+        msg: "Se colocan iptables basicas"
+
+# Bloque para las configuaciones 4 Logging and auditing
+  - name: Logging and auditing
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 4.x.x.x Logging and auditing"
+
+# Configure audit.conf
+    - name: audit logs are not delete
+      lineinfile: 
+        path: /etc/audit/auditd.conf
+        regexp: '^max_log_file_action'
+        line: max_log_file_action = keep_logs 
+      tags:
+        - auditd.conf
+        - CIS_4
+    - debug:
+        msg: "Se configura la retencion de logs de audit en auditd.conf"
+
+# Se agrega la activacion del auditd a nivel de grub
+    - name: Configure audit in grub
+      script: CIS/files/grub.sh
+      tags:
+        - audit_grub
+        - CIS_4
+    - debug:
+        msg: "Se agrega el parametro audit=1 en /etc/default/grub"
+
+# Se configuran las reglas de auditd
+    - name: Configure audit rules
+      template:
+        src: CIS/templates/audit.rules.j2
+        dest: /etc/audit/rules.d/audit.rules
+        owner: root
+        mode: 0600
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las audit rules "
+
+    - name: Configure audit rules
+      template:
+        src: CIS/templates/DSI.rules.j2
+        dest: /etc/audit/rules.d/DSI.rules
+        owner: root
+        mode: 0600
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las DSI rules "
+
+    - name: Configure audit rules
+      template:
+        src: CIS/templates/99-finalize.rules.j2
+        dest: /etc/audit/rules.d/99-finalize.rules
+        owner: root
+        mode: 0600
+      tags:
+        - audit_rules
+        - CIS_4
+    - debug:
+        msg: "Se configuran las finalize rules "
+
+# Se habilita el demonio de rsyslog
+    - name: Enable rsyslog
+      systemd:
+        name: rsyslog
+        state: started
+        enabled: yes        
+      tags:
+        - rsyslog
+        - CIS_4
+    - debug:
+        msg: "Se habilita el demonio de rsyslog"
+
+# Se crea la configuiracion de rsyslog.conf
+    - name: Create rsyslog.conf
+      template:
+        src: CIS/templates/rsyslog.conf.j2
+        dest: /etc/rsyslog.conf
+        owner: root
+        mode: 0644
+      tags:
+        - rsyslog
+        - CIS_4
+    - debug:
+        msg: "Se crea la configuracion de rsyslog.conf"
+
+# Se configura Journald
+    - name: Create rsyslog.conf
+      template:
+        src: CIS/templates/journald.conf.j2
+        dest: /etc/systemd/journald.conf
+        owner: root
+        mode: 0644
+      tags:
+        - journald
+        - CIS_4
+    - debug:
+        msg: "Se crea la configuracion de journald.conf"
+
+
+# Bloque para las configuaciones 5 Access Authentication and Authorization
+  - name: Configure cron
+    block:
+    - debug:
+        msg: "Se inicia bloque para aplicar los puntos 5.x.x.x Access Authentication and Authorization"
+
+# Bloque para activar el cron
+    - name: Enable crond
+      systemd:
+        name: crond
+        state: started
+        enabled: yes
+      tags:
+        - cron
+        - CIS_5
+    - debug:
+        msg: "Se activa el demonio de crond"
+
+# Colocar permisos de cron de manera adecuada
+    - name: Configure permition /etc/cron
+      file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: root
+        group: root
+        mode: '0600'
+      with_items:
+        - "{{ cron_files }}"
+      tags:
+        - cron
+        - CIS_5
+    - debug:
+        msg: "Se configuran los permisos /etc/crontab"
+
+# Se crea la configuiracion de sshd
+    - name: Create  sshd configuration
+      template:
+        src: CIS/templates/sshd_config.j2
+        dest: /etc/ssh/sshd_config
+        owner: root
+        mode: 0600
+      tags:
+        - sshd
+        - CIS_5
+    - debug:
+        msg: "Se crea la configuracion de sshd_config"
+
+# Configure PASS_MIN_DAYS
+    - name: Configure PASS_MIN_DAYS_7 in login.defs
+      lineinfile: 
+        path: /etc/login.defs
+        regexp: '^PASS_MIN_DAYS'
+        line: PASS_MIN_DAYS 7 
+      tags:
+        - PASS_MIN_DAYS_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias que deben pasar para cambiar el password en /etc/login.defs"
+    
+    - name: Configure PASS_MIN_DAYS_7 in chage command
+      shell: "for i in $(cat /etc/passwd | awk -F : '{print $1}'); do chage --mindays 7 $i ;done"
+      tags:
+        - PASS_MIN_DAYS_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias que deben pasar para cambiar el password en chage"
+
+# Configure PASS_WARN_AGE
+    - name: Configuere PASS_WARN_AGE in login.defs
+      lineinfile: 
+        path: /etc/login.defs
+        regexp: '^PASS_WARN_AGE'
+        line: PASS_WARN_AGE 7
+      tags:
+        - PASS_WARN_AGE_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias  para que se de aviso para el  cambio del password en /etc/login.defs"
+
+    - name: Configuere PASS_WARN_AGE in chage command
+      shell: "for i in $(cat /etc/passwd | awk -F : '{print $1}'); do chage --warndays 7 $i ;done"
+      tags:
+        - PASS_WARN_AGE_7
+        - CIS_5
+    - debug:
+        msg: "Se configura el minimo de dias  para que se de aviso para el  cambio del password en chage"
+
+    - name: Password creation requeriments
+      template:
+        src: CIS/templates/pwquality.conf.j2
+        dest: /etc/security/pwquality.conf
+        owner: root
+        mode: 0644
+      tags:
+        - password_creation
+        - CIS_5
+    - debug:
+        msg: "Se configura los requerimientos para la creacion de password"
+
+# Configure  the  umask 
+    - name: Configure umask
+      replace: 
+        path: "{{ item.path }}"
+        regexp: '\s{1,4}umask\s[0-9]+'
+        replace: '    umask 027'
+      with_items:
+        - "{{ mask_files }}"
+      tags:
+        - umask
+        - CIS_5
+    - debug:
+        msg: "Se configura umask 022"
+
+# Configure  the  umask 
+    - name: Configure umask
+      replace: 
+        path: "{{ item.path }}"
+        regexp: '^.*TMOUT'
+        replace: '#TMOUT'
+      with_items:
+        - "{{ mask_files }}"
+      tags:
+        - umask
+        - CIS_5
+    - debug:
+        msg: "Se comenta la configuracion de TMOUT si existe"
+
+
+# Configurate the TMOUT
+    - name: Configure TMOUT
+      lineinfile:
+        path: "{{ item.path }}"
+        line: "if [[ $(readonly | grep -ci \"TMOUT\") == '0' ]];then\n\tTMOUT=900\n\treadonly TMOUT\n\texport TMOUT\nfi" 
+      with_items:
+        - "{{ mask_files }}"
+      tags:
+        - TMOUT
+        - CIS_5
+    - debug:
+        msg: "Se configura el TMOUT a 600"
+
+# Configure the module pam for su
+    - name: Configure  pam
+      template:
+        src: CIS/templates/{{ item.templ }}
+        dest: /etc/pam.d/{{ item.pam }}
+        owner: root
+        mode: 0644
+      with_items:
+        - "{{ pam_files }}"
+      tags:
+        - su
+        - CIS_5
+    - debug:
+        msg: "Configuracion del modulo de PAM para su"
+
+  # Create /root/bin for PATH integrity
+    - name: create /root/bin
+      file:
+        path: /root/bin
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+      tags:
+        - root_bin
+        - CIS_5

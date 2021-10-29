@@ -1,0 +1,44 @@
+# For more information about this file, see the man pages
+# ntp.conf(5), ntp_acc(5), ntp_auth(5), ntp_clock(5), ntp_misc(5), ntp_mon(5).
+
+driftfile /var/lib/ntp/drift
+
+# Permit time synchronization with our time source, but do not
+# permit the source to query or modify the service on this system.
+restrict default nomodify notrap nopeer noquery
+
+# Permit all access over the loopback interface.  This could
+# be tightened as well, but to do so would effect some of
+# the administrative functions.
+restrict 127.0.0.1
+restrict ::1
+
+# Azteca Servicios
+server 10.50.220.21 iburst maxpoll 9
+# Balanceador Insurgentes
+server 10.53.21.136 iburst maxpoll 9
+# Balanceador KIO Queretaro
+server 10.82.32.202 iburst maxpoll 9
+# Servidores AD
+server 10.53.26.22  iburst maxpoll 9
+server 10.53.26.23  iburst maxpoll 9
+
+# Enable public key cryptography.
+
+includefile /etc/ntp/crypto/pw
+
+# Key file containing the keys and key identifiers used when operating
+# with symmetric key cryptography.
+includefile /etc/ntp/crypto/pw
+
+# Key file containing the keys and key identifiers used when operating
+# with symmetric key cryptography.
+keys /etc/ntp/keys
+
+# Disable the monitoring facility to prevent amplification attacks using ntpdc
+# monlist command when default restrict does not include the noquery flag. See
+# CVE-2013-5211 for more details.
+# Note: Monitoring will not be disabled with the limited restriction flag.
+disable monitor
+restrict -4 default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery

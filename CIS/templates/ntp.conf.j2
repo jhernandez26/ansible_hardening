@@ -1,0 +1,20 @@
+## Configuracion NTP operaciones cloudera
+# NTP client configuration
+driftfile /var/lib/ntp/drift
+restrict default nomodify notrap nopeer noquery
+restrict -4 default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+restrict 127.0.0.1 
+restrict ::1
+
+#--- Operaciones cloudera ---#
+server 10.53.34.98 iburst maxpoll 9
+#--- Balanceador Insurgentes ---#
+server 10.53.21.136 iburst maxpoll 9
+#--- Balanceador KIO Queretaro ---#
+server 10.82.32.202 iburst maxpoll 9
+
+# Security configuration
+includefile /etc/ntp/crypto/pw
+keys /etc/ntp/keys
+disable monitor

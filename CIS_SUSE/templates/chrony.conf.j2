@@ -1,0 +1,22 @@
+## Configuracion NTP operaciones cloudera
+## NTP Server
+{% if 'aws' in ansible_fqdn %}
+server 169.254.169.123                  minpoll 4  maxpoll 4  iburst
+{% else %}
+#--- Operaciones cloudera ---#
+server 10.53.34.98 iburst maxpoll 9
+#--- Balanceador Insurgentes ---#
+server 10.53.21.136 iburst maxpoll 9
+#--- Balanceador KIO Queretaro ---#
+server 10.82.32.202 iburst maxpoll 9
+{% endif %}
+
+## NTP client configuration
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+#minsources 3
+
+## NTP log
+logdir /var/log/chrony
+log measurements statistics tracking
