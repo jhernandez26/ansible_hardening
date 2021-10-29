@@ -90,7 +90,7 @@ flush_n_delete() {
 	let ret+=$?;
 
         # Delete firewall chains.
-	$IPTABLES_CMD -t $i -X;
+	$IPTABLES_CMD -t $i -X;iptables
 	let ret+=$?;
 
 	# Set counter to zero.
@@ -145,7 +145,7 @@ set_policy() {
 		    && $IPTABLES_CMD -t mangle -P FORWARD $policy \
 		    || let ret+=1
 		;;
-	    security)
+	    security)iptables
 	        # Ignore the security table
 	        ;;
 	    *)

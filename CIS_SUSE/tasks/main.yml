@@ -17,7 +17,6 @@
       zypper:
         name: iptables
         state: present
-      
       tags:
         - iptables
         - CIS_3
@@ -106,7 +105,6 @@
 
     - name: touch iptables
       ansible.builtin.shell: touch /var/lock/subsys/iptables
-      
       tags:
         - iptables
         - CIS_3
@@ -119,7 +117,6 @@
         dest: /etc/sysconfig/iptables
         owner: root
         mode: 0600
-      
       tags:
         - iptables
         - CIS_3
@@ -131,7 +128,6 @@
         name: "{{ item }}"
         enabled: yes
         state: started
-      
       loop:
         - iptables
         - iptables
@@ -561,7 +557,7 @@
         - su
         - CIS_5
     - debug:
-        msg: "Configuracion del modulo de PAM para su"
+        msg: "Configuracion del modulo de vim / para su"
 
   # Create /root/bin for PATH integrity
     - name: create /root/bin
